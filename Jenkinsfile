@@ -1,6 +1,8 @@
 pipeline {
     agent any
-
+tools {
+        maven 'Maven 3.6.3'  // The name you gave in "Global Tool Configuration"
+    }
     environment {
         // Azure details based on your provided information
         AZURE_SUBSCRIPTION_ID = "d82fdb36-e398-48b3-b36b-d3520373269e"  // Your Azure subscription ID
