@@ -45,7 +45,7 @@ tools {
 
         stage('Publish Artifact') {
             steps {
-                archiveArtifacts artifacts: env.ARTIFACT_PATH, fingerprint: true
+                archiveArtifacts artifacts: 'nodeapp.zip', fingerprint: true
             }
         }
 
