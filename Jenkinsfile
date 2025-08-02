@@ -7,7 +7,7 @@ tools {
         // Azure details based on your provided information
         AZURE_SUBSCRIPTION_ID = "d82fdb36-e398-48b3-b36b-d3520373269e"  // Your Azure subscription ID
         AZURE_RESOURCE_GROUP = "demo11"
-        AZURE_WEBAPP_NAME = "saranya148715"
+        AZURE_WEBAPP_NAME = "saranya14815"
         AZURE_APP_SERVICE_PLAN = "ASP-demo11-b819"
         AZURE_TENANT_ID = "d9ef55f0-d1a8-4ed7-95d5-a51c583f7d5d"
 
