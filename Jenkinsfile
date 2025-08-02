@@ -1,99 +1,139 @@
 pipeline {
     agent any
-tools {
-        maven 'Maven 3.6.3'  // The name you gave in "Global Tool Configuration"
+
+    tools {
+        maven 'Maven 3.6.3' // Ensure this matches the Maven installation name in Jenkins
     }
+
     environment {
-        // Azure details based on your provided information
-        AZURE_SUBSCRIPTION_ID = "d82fdb36-e398-48b3-b36b-d3520373269e"  // Your Azure subscription ID
-        AZURE_RESOURCE_GROUP = "demo11"
-        AZURE_WEBAPP_NAME = "saranya14815"
-        AZURE_APP_SERVICE_PLAN = "ASP-demo11-b819"
-        AZURE_TENANT_ID = "d9ef55f0-d1a8-4ed7-95d5-a51c583f7d5d"
-
-        // Jenkins credential ID for Azure service principal
-        AZURE_CREDENTIALS_ID = "azure-sp"  // Make sure this matches your Jenkins credential ID
-
-        // Maven settings (optional)
-        MAVEN_CMD = "mvn"
-
-        // Artifact details
-        //ARTIFACT_PATH = "target/*.jar"
-        NODE_APP_ZIP = "nodeapp.zip"
+        ImageName = 'my-app-image'
+        BUILD_TAG = "latest"
     }
-    
+
     stages {
-        // --- Continuous Integration ---
-
-        stage('Checkout from Git') {
+        stage('Checkout From Git') {
             steps {
-                checkout scm
+                git branch: 'main', url: 'https://github.com/SaranyaK459/spring-petclinic.git'
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Maven Validate') {
             steps {
-                sh "${env.MAVEN_CMD} validate"
+                echo 'Validating the project...'
+                sh 'mvn validate'
             }
         }
 
-        stage('Package App') {
+        stage('Maven Compile') {
             steps {
-                sh "${env.MAVEN_CMD} package"
+                echo 'Compiling the project...'
+                sh 'mvn compile'
             }
         }
 
-        stage('Publish Artifact') {
+        stage('Maven Test') {
             steps {
-                archiveArtifacts artifacts: 'nodeapp.zip', fingerprint: true
+                echo 'Running tests...'
+                sh 'mvn test'
             }
         }
 
-        // --- Continuous Deployment ---
-
-        stage('Download Artifact') {
+        stage('Maven Package') {
             steps {
-                // Assuming this runs on the same agent, restore artifacts if needed
-                // If deploying from different workspace, use copyArtifacts plugin or pipeline artifacts
-                echo "Artifact assumed to be available in workspace"
+                echo 'Packaging the project...'
+                sh 'mvn package'
             }
         }
 
-        stage('Login to Azure') {
+        stage('SonarCloud Analysis') {
+            environment {
+                SCANNER_HOME = tool 'sonar-scanner' // Matches tool config in Jenkins
+            }
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: env.AZURE_CREDENTIALS_ID,
-                    usernameVariable: 'AZURE_CLIENT_ID',
-                    passwordVariable: 'AZURE_CLIENT_SECRET'
-                )]) {
-                    // You might want to inject tenant ID if needed, set as environment variable or here directly
+                withSonarQubeEnv('sonarserver') {
                     sh '''
-                        # Login to Azure using service principal
-                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
-                        az account set --subscription $AZURE_SUBSCRIPTION_ID
+                        $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.organization=organisation1412 \
+                        -Dsonar.projectName=Jenkinsproject \
+                        -Dsonar.projectKey=organisation1412_jenkinsproject \
+                        -Dsonar.sources=src \
+                        -Dsonar.java.binaries=target/classes \
+                        -Dsonar.host.url=https://sonarcloud.io
                     '''
                 }
             }
         }
 
-        stage('Deploy to Azure Web App') {
-             steps {
-                sh """
-                    az webapp deployment source config-zip --resource-group ${env.AZURE_RESOURCE_GROUP} \\
-                                                           --name ${env.AZURE_WEBAPP_NAME} \\
-                                                           --src-path ${env.NODE_APP_ZIP}
-                """
+        stage('Publish Sonar Report') {
+            steps {
+                echo 'Publishing SonarCloud report...'
+                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        mvn clean verify sonar:sonar \
+                        -Dsonar.projectKey=organisation1412_jenkinsproject \
+                        -Dsonar.organization=organisation1412 \
+                        -Dsonar.host.url=https://sonarcloud.io \
+                        -Dsonar.login=$SONAR_TOKEN \
+                        -Dsonar.qualitygate.wait=false
+                    '''
+                }
             }
         }
-    }
-       
 
-    post {
-        success {
-            echo 'Pipeline completed successfully.'
+        stage('Build Docker Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh '''
+                    docker build -t ${ImageName}:${BUILD_TAG} .
+                    docker tag ${ImageName}:${BUILD_TAG} testregistry1311.azurecr.io /${ImageName}:${BUILD_TAG}
+                '''
+            }
         }
-        failure {
-            echo 'Pipeline failed.'
+
+        stage('Trivy Scan') {
+            steps {
+                echo 'Running Trivy scan...'
+                sh '''
+                    trivy image --format table --severity HIGH,CRITICAL \
+                        --output trivy-report.txt testregistry1311.azurecr.io /${ImageName}:${BUILD_TAG}
+                '''
+            }
+            post {
+                always {
+                    archiveArtifacts artifacts: 'trivy-report.txt'
+                }
+            }
+        }
+
+        stage('Login to ACR and Push Image') {
+            steps {
+                withCredentials([
+                    usernamePassword(credentialsId: 'azure-sp', usernameVariable: 'AZURE_USERNAME', passwordVariable: 'AZURE_PASSWORD'),
+                    string(credentialsId: 'azure-tenant', variable: 'TENANT_ID')
+                ]) {
+                    script {
+                        echo "Logging into Azure Container Registry..."
+                        sh '''
+                            az login --service-principal -u "$AZURE_USERNAME" -p "$AZURE_PASSWORD" --tenant "$TENANT_ID"
+                            az acr login --name testregistry1311
+                            docker push testregistry1311.azurecr.io/${ImageName}:${BUILD_TAG}
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    echo 'Deploying to Kubernetes...'
+                    sh '''
+                        az aks get-credentials --resource-group demo11 --name demo-aks
+                        kubectl apply -f k8s/petclinic.yml
+                        kubectl get all
+                    '''
+                }
+            }
         }
     }
 }
