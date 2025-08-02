@@ -9,6 +9,7 @@ tools {
         AZURE_RESOURCE_GROUP = "demo11"
         AZURE_WEBAPP_NAME = "saranya148715"
         AZURE_APP_SERVICE_PLAN = "ASP-demo11-b819"
+        AZURE_TENANT_ID = "d9ef55f0-d1a8-4ed7-95d5-a51c583f7d5d"
 
         // Jenkins credential ID for Azure service principal
         AZURE_CREDENTIALS_ID = "azure-sp"  // Make sure this matches your Jenkins credential ID
