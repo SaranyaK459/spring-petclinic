@@ -49,16 +49,17 @@ pipeline {
             environment {
                 SCANNER_HOME = tool 'sonar-scanner' // Matches tool config in Jenkins
             }
-            steps {
-                withSonarQubeEnv('sonarserver') {
-                    sh '''
-                        $SCANNER_HOME/bin/sonar-scanner \
-                        -Dsonar.organization=organisation1412 \
-                        -Dsonar.projectName=Jenkinsproject \
-                        -Dsonar.projectKey=organisation1412_jenkinsproject \
-                        -Dsonar.sources=src \
-                        -Dsonar.java.binaries=target/classes \
-                        -Dsonar.host.url=https://sonarcloud.io
+             steps {
+                withCredentials([string(credentialsId: 'securetoken', variable: 'SONAR_TOKEN')]) {
+                sh '''
+                $SCANNER_HOME/bin/sonar-scanner \
+                -Dsonar.organization=organisation1412 \
+                -Dsonar.projectName=Jenkinsproject \
+                -Dsonar.projectKey=organisation1412_jenkinsproject \
+                -Dsonar.sources=src \
+                -Dsonar.java.binaries=target/classes \
+                -Dsonar.host.url=https://sonarcloud.io \
+                -Dsonar.login=$SONAR_TOKEN
                     '''
                 }
             }
