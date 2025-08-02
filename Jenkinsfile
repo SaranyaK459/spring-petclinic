@@ -86,7 +86,7 @@ pipeline {
                 echo 'Building Docker image...'
                 sh '''
                     docker build -t ${ImageName}:${BUILD_TAG} .
-                    docker tag ${ImageName}:${BUILD_TAG} testregistry1311.azurecr.io /${ImageName}:${BUILD_TAG}
+                    docker tag ${ImageName}:${BUILD_TAG} testregistry1311.azurecr.io/${ImageName}:${BUILD_TAG}
                 '''
             }
         }
@@ -96,7 +96,7 @@ pipeline {
                 echo 'Running Trivy scan...'
                 sh '''
                     trivy image --format table --severity HIGH,CRITICAL \
-                        --output trivy-report.txt testregistry1311.azurecr.io /${ImageName}:${BUILD_TAG}
+                        --output trivy-report.txt testregistry1311.azurecr.io/${ImageName}:${BUILD_TAG}
                 '''
             }
             post {
