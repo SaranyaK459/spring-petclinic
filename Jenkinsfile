@@ -67,7 +67,7 @@ pipeline {
         stage('Publish Sonar Report') {
             steps {
                 echo 'Publishing SonarCloud report...'
-                withCredentials([string(credentialsId: 'sonar-token', variable: 'SONAR_TOKEN')]) {
+                withCredentials([string(credentialsId: 'securetoken', variable: 'SONAR_TOKEN')]) {
                     sh '''
                         mvn clean verify sonar:sonar \
                         -Dsonar.projectKey=organisation1412_jenkinsproject \
