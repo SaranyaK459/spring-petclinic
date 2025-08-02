@@ -18,7 +18,8 @@ tools {
         MAVEN_CMD = "mvn"
 
         // Artifact details
-        ARTIFACT_PATH = "target/*.jar"
+        //ARTIFACT_PATH = "target/*.jar"
+        NODE_APP_ZIP = "nodeapp.zip"
     }
     
     stages {
@@ -76,17 +77,16 @@ tools {
         }
 
         stage('Deploy to Azure Web App') {
-            steps {
+             steps {
                 sh """
-                    # Deploy packaged .jar to Azure Web App (Java SE example)
-                    az webapp deploy --resource-group ${env.AZURE_RESOURCE_GROUP} \\
-                                     --name ${env.AZURE_WEBAPP_NAME} \\
-                                     --type jar \\
-                                     --src-path ${env.ARTIFACT_PATH}
+                    az webapp deployment source config-zip --resource-group ${env.AZURE_RESOURCE_GROUP} \\
+                                                           --name ${env.AZURE_WEBAPP_NAME} \\
+                                                           --src-path ${env.NODE_APP_ZIP}
                 """
             }
         }
     }
+       
 
     post {
         success {
