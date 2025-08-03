@@ -129,7 +129,7 @@ pipeline {
                 script {
                     echo 'Deploying to Kubernetes...'
                     sh '''
-                        az aks get-credentials --resource-group demo11 --name demo-aks
+                        az aks get-credentials --resource-group demo11 --name test-aks-cluster11
                         kubectl apply -f k8s/petclinic.yml
                         kubectl get all
                     '''
