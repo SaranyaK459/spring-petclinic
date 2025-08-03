@@ -59,7 +59,7 @@ pipeline {
                 -Dsonar.sources=src \
                 -Dsonar.java.binaries=target/classes \
                 -Dsonar.host.url=https://sonarcloud.io \
-                -Dsonar.login=$SONAR_TOKEN
+                -Dsonar.token=$SONAR_TOKEN
                     '''
                 }
             }
@@ -74,7 +74,7 @@ pipeline {
                         -Dsonar.projectKey=organisation1412_jenkinsproject \
                         -Dsonar.organization=organisation1412 \
                         -Dsonar.host.url=https://sonarcloud.io \
-                        -Dsonar.login=$SONAR_TOKEN \
+                        -Dsonar.token=$SONAR_TOKEN \
                         -Dsonar.qualitygate.wait=false
                     '''
                 }
